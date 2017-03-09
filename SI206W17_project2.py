@@ -2,7 +2,7 @@
 
 ## COMMENT HERE WITH:
 ## Your name: Lauren Sigurdson
-## Anyone you worked with on this project: Mariel Setton
+## Anyone you worked with on this project: Mariel Setton, Michael Braunstien
 
 ## Below we have provided import statements, comments to separate out the parts of the project, instructions/hints/examples, and at the end, tests. See the PDF of instructions for more detail. 
 ## You can check out the SAMPLE206project2_caching.json for an example of what your cache file might look like.
@@ -51,7 +51,7 @@ except:
 ## find_urls("the internet is awesome #worldwideweb") should return [], empty list
 
 def find_urls(s):
-	m = re.findall('https?:\/\/[A-Za-z0-9]{2,}(?:\.[A-Za-z0-9]{2,})+', s)
+	m = re.findall('https?:\/\/[A-Za-z0-9]+(?:\.[A-Za-z0-9]{2,})+', s)
 	return m
 
 ## PART 2 (a) - Define a function called get_umsi_data.
@@ -113,24 +113,18 @@ def get_five_tweets(phrase):
 		f.close()
 	tweet_texts = []
 	for tweet in twitter_results["statuses"]:
-		tweet_texts.append(tweet)
+		tweet_texts.append(tweet["text"])
 	return tweet_texts[:5]
 	
 
 ## PART 3 (b) - Write one line of code to invoke the get_five_tweets function with the phrase "University of Michigan" and save the result in a variable five_tweets.
-phrase = "University of Michigan"
-five_tweets = get_five_tweets(phrase)
-
-
+five_tweets = get_five_tweets("University of Michigan")
 
 ## PART 3 (c) - Iterate over the five_tweets list, invoke the find_urls function that you defined in Part 1 on each element of the list, and accumulate a new list of each of the total URLs in all five of those tweets in a variable called tweet_urls_found. 
- tweet_urls_found = []
- for s in five_tweets:
- 	tweet_urls_found.append(find_urls(s))
-
-
-
-
+tweet_urls_found = []
+for s in five_tweets:
+	for my_url in find_urls(s):
+		tweet_urls_found.append(my_url)
 
 ########### TESTS; DO NOT CHANGE ANY CODE BELOW THIS LINE! ###########
 
