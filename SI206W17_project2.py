@@ -51,7 +51,7 @@ except:
 ## find_urls("the internet is awesome #worldwideweb") should return [], empty list
 
 def find_urls(s):
-	m = re.findall('https?:\/\/[A-Za-z0-0]{2,}(?:\.+[A-Za-z0-9]{2,})+', s)
+	m = re.findall('https?:\/\/[A-Za-z0-9]{2,}(?:\.[A-Za-z0-9]{2,})+', s)
 	return m
 
 ## PART 2 (a) - Define a function called get_umsi_data.
@@ -71,7 +71,7 @@ def get_umsi_data():
 		response = []
 		html_list = []
 		response.append(requests.get("https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All", headers = {'User-Agent': 'SI_CLASS'}))
-		for i in range(1,12):
+		for i in range(2,12):
 			response.append(requests.get("https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page={}".format(i), headers = {'User-Agent': 'SI_CLASS'}))
 		for page in response:
 			html_list.append(page.text)
@@ -80,28 +80,20 @@ def get_umsi_data():
 		f.write(json.dumps(CACHE_DICTION))
 		f.close()
 	return CACHE_DICTION["umsi_directory_data"]
-print (get_umsi_data())
 
 ## PART 2 (b) - Create a dictionary saved in a variable umsi_titles 
 ## whose keys are UMSI people's names, and whose associated values are those people's titles, e.g. "PhD student" or "Associate Professor of Information"...
- 
+
+umsi_titles = {}
 for page in get_umsi_data():
 	soup = BeautifulSoup(page,"html.parser")
 	people = soup.find_all("div",{"class":"views-row"})
-	umsi_titles = {}
 	
-	tempNameList = []
-	tempTitleList = []
-	for n in soup.find_all(attrs={"property":"dc:title"}): 
-		name = n.text
-		tempNameList.append(name)
-	for t in soup.find_all(class_="field field-name-field-person-titles field-type-text field-label-hidden"):
-		title = t.text
-		tempTitleList.append(title)
-	for r in range(len(tempNameList)):
-		umsi_titles[tempNameList[r]] = tempTitleList[r]
+	for p in people:
+		name = p.find("div", {"property":"dc:title"})
+		position = p.find("div", {"class":"field-name-field-person-titles"})
+		umsi_titles[name.text] = position.text
 	
-
 
 ## PART 3 (a) - Define a function get_five_tweets
 ## INPUT: Any string
@@ -126,11 +118,15 @@ def get_five_tweets(phrase):
 	
 
 ## PART 3 (b) - Write one line of code to invoke the get_five_tweets function with the phrase "University of Michigan" and save the result in a variable five_tweets.
-
+phrase = "University of Michigan"
+five_tweets = get_five_tweets(phrase)
 
 
 
 ## PART 3 (c) - Iterate over the five_tweets list, invoke the find_urls function that you defined in Part 1 on each element of the list, and accumulate a new list of each of the total URLs in all five of those tweets in a variable called tweet_urls_found. 
+ tweet_urls_found = []
+ for s in five_tweets:
+ 	tweet_urls_found.append(find_urls(s))
 
 
 
