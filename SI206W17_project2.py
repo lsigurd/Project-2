@@ -1,8 +1,8 @@
 ## SI 206 W17 - Project 2 
 
 ## COMMENT HERE WITH:
-## Your name:
-## Anyone you worked with on this project:
+## Your name: Lauren Sigurdson
+## Anyone you worked with on this project: Mariel Setton
 
 ## Below we have provided import statements, comments to separate out the parts of the project, instructions/hints/examples, and at the end, tests. See the PDF of instructions for more detail. 
 ## You can check out the SAMPLE206project2_caching.json for an example of what your cache file might look like.
@@ -16,6 +16,7 @@ import requests
 import tweepy
 import twitter_info # Requires you to have a twitter_info file in this directory
 from bs4 import BeautifulSoup
+import re
 
 ## Tweepy authentication setup
 ## Fill these in in the twitter_info.py file
@@ -32,9 +33,13 @@ api = tweepy.API(auth, parser=tweepy.parsers.JSONParser())
 ## Part 0 -- CACHING SETUP
 
 ## Write the code to begin your caching pattern setup here.
-
-
-
+cache_filename = "206project2_caching.json"
+try:
+  cache_file_obj = open(cache_filename,'r') 
+  cache_contents = cache_file_obj.read() 
+  CACHE_DICTION = json.loads(cache_contents)
+except:
+	CACHE_DICTION = {}
 
 ## PART 1 - Define a function find_urls.
 ## INPUT: any string
@@ -45,11 +50,9 @@ api = tweepy.API(auth, parser=tweepy.parsers.JSONParser())
 ## find_urls("I love looking at websites like http://etsy.com and http://instagram.com and stuff") should return ["http://etsy.com","http://instagram.com"]
 ## find_urls("the internet is awesome #worldwideweb") should return [], empty list
 
-
-
-
-
-
+def find_urls(s):
+	m = re.findall('https?:\/\/[A-Za-z0-0]{2,}(?:\.+[A-Za-z0-9]{2,})+', s)
+	return m
 
 ## PART 2 (a) - Define a function called get_umsi_data.
 ## INPUT: N/A. No input.
@@ -61,19 +64,43 @@ api = tweepy.API(auth, parser=tweepy.parsers.JSONParser())
 ## Start with this page: https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All  
 ## End with this page: https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page=11 
 
-
-
-
-
-
+def get_umsi_data():
+	if "umsi_directory_data" in CACHE_DICTION:
+		return CACHE_DICTION["umsi_directory_data"]
+	else:
+		response = []
+		html_list = []
+		response.append(requests.get("https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All", headers = {'User-Agent': 'SI_CLASS'}))
+		for i in range(1,12):
+			response.append(requests.get("https://www.si.umich.edu/directory?field_person_firstname_value=&field_person_lastname_value=&rid=All&page={}".format(i), headers = {'User-Agent': 'SI_CLASS'}))
+		for page in response:
+			html_list.append(page.text)
+		CACHE_DICTION["umsi_directory_data"] = html_list
+		f = open(cache_filename, 'w')
+		f.write(json.dumps(CACHE_DICTION))
+		f.close()
+	return CACHE_DICTION["umsi_directory_data"]
+print (get_umsi_data())
 
 ## PART 2 (b) - Create a dictionary saved in a variable umsi_titles 
 ## whose keys are UMSI people's names, and whose associated values are those people's titles, e.g. "PhD student" or "Associate Professor of Information"...
-
-
-
-
-
+ 
+for page in get_umsi_data():
+	soup = BeautifulSoup(page,"html.parser")
+	people = soup.find_all("div",{"class":"views-row"})
+	umsi_titles = {}
+	
+	tempNameList = []
+	tempTitleList = []
+	for n in soup.find_all(attrs={"property":"dc:title"}): 
+		name = n.text
+		tempNameList.append(name)
+	for t in soup.find_all(class_="field field-name-field-person-titles field-type-text field-label-hidden"):
+		title = t.text
+		tempTitleList.append(title)
+	for r in range(len(tempNameList)):
+		umsi_titles[tempNameList[r]] = tempTitleList[r]
+	
 
 
 ## PART 3 (a) - Define a function get_five_tweets
@@ -82,7 +109,21 @@ api = tweepy.API(auth, parser=tweepy.parsers.JSONParser())
 ## RETURN VALUE: A list of strings: A list of just the text of 5 different tweets that result from the search.
 
 
-
+def get_five_tweets(phrase):
+	unique_identifier = "twitter_{}".format(phrase)
+	if unique_identifier in CACHE_DICTION:
+		twitter_results = CACHE_DICTION[unique_identifier]
+	else:
+		twitter_results = api.search(q = phrase)
+		CACHE_DICTION[unique_identifier] = twitter_results
+		f = open(cache_filename,'w')
+		f.write(json.dumps(CACHE_DICTION))
+		f.close()
+	tweet_texts = []
+	for tweet in twitter_results["statuses"]:
+		tweet_texts.append(tweet)
+	return tweet_texts[:5]
+	
 
 ## PART 3 (b) - Write one line of code to invoke the get_five_tweets function with the phrase "University of Michigan" and save the result in a variable five_tweets.
 
